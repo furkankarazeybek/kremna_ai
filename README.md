@@ -1,3 +1,13 @@
+---
+title: Kremna AI Dashboard
+emoji: 🚀
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+app_port: 7860
+---
+
 # Kremna AI - Dashboard Backend API
 
 Bu proje, Kremna AI Dashboard ve Widget uygulamaları için geliştirilmiş RESTful API ve WebSocket sunucusudur.  

@@ -1,0 +1,24 @@
+name: Sync to Hugging Face Hub
+on:
+  push:
+    branches: [main] # Eğer ana dalınızın adı 'master' ise burayı 'master' yapın
+
+  # Workflow'u manuel tetiklemek isterseniz:
+  workflow_dispatch:
+
+jobs:
+  sync-to-hub:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          lfs: true
+      
+      - name: Push to hub
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }} # Adım 2'de eklediğimiz secret
+          # AŞAĞIDAKİ BİLGİLERİ KENDİ SPACE BİLGİLERİNİZLE DEĞİŞTİRİN
+          HF_USERNAME: furkankarazeybek
+          HF_SPACE_NAME: kremna_company
+        run: git push https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME main

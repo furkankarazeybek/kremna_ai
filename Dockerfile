@@ -26,8 +26,8 @@ RUN npm run build
 # 2. Aşama: Çalıştırma Ortamı
 FROM node:20-slim
 
-# Gerekli paketleri kur (netcat, postgresql, nginx, supervisor)
-# PostgreSQL 15 sürümünü açıkça belirtiyoruz ki path hatası olmasın
+# Gerekli paketleri kur
+# Postgres 15 ve netcat kurulumu
 RUN apt-get update && \
     apt-get install -y postgresql-15 postgresql-contrib-15 nginx supervisor netcat-openbsd && \
     rm -rf /var/lib/apt/lists/*
@@ -40,14 +40,17 @@ COPY --from=builder /app/backend/package.json ./backend/package.json
 COPY --from=builder /app/frontend/build /usr/share/nginx/html/dashboard
 COPY --from=builder /app/widget/dist /usr/share/nginx/html/widget
 
-# PostgreSQL Başlangıç Ayarları (Build aşamasında kullanıcı oluşturma)
+# Postgres Başlangıç Verilerini Oluştur
 USER postgres
 RUN /etc/init.d/postgresql start && \
     psql --command "CREATE USER kuser WITH SUPERUSER PASSWORD 'kpass';" && \
     createdb -O kuser dashboard_db
 USER root
 
-# Nginx Yapılandırması (printf ile güvenli yazım)
+# Postgres Socket Klasörünü Hazırla (İzin hatasını önlemek için)
+RUN mkdir -p /var/run/postgresql && chown -R postgres:postgres /var/run/postgresql && chmod 2777 /var/run/postgresql
+
+# Nginx Yapılandırması
 RUN printf 'server {\n\
     listen 7860;\n\
     location / {\n\
@@ -59,35 +62,53 @@ RUN printf 'server {\n\
         try_files $uri $uri/ /index.html;\n\
     }\n\
     location /api/v1 {\n\
-        proxy_pass http://localhost:3000;\n\
+        proxy_pass http://127.0.0.1:3000;\n\
+        proxy_http_version 1.1;\n\
+        proxy_set_header Upgrade $http_upgrade;\n\
+        proxy_set_header Connection "Upgrade";\n\
+        proxy_set_header Host $host;\n\
     }\n\
     location /socket.io {\n\
-        proxy_pass http://localhost:3000;\n\
+        proxy_pass http://127.0.0.1:3000;\n\
         proxy_http_version 1.1;\n\
         proxy_set_header Upgrade $http_upgrade;\n\
         proxy_set_header Connection "Upgrade";\n\
     }\n\
 }' > /etc/nginx/sites-available/default
 
-# Supervisord Yapılandırması (printf ile güvenli yazım)
-# Backend açılmadan önce veritabanını (port 5432) bekleyecek
+# Supervisord Yapılandırması (LOGLARI GÖRÜNÜR YAPTIK)
+# stdout_logfile=/dev/stdout satırları sayesinde hatayı Logs sekmesinde görebileceksin.
 RUN printf '[supervisord]\n\
 nodaemon=true\n\
+logfile=/dev/null\n\
+logfile_maxbytes=0\n\
 \n\
 [program:postgres]\n\
 command=/bin/bash -c "rm -f /var/lib/postgresql/15/main/postmaster.pid && /usr/lib/postgresql/15/bin/postgres -D /var/lib/postgresql/15/main -c config_file=/etc/postgresql/15/main/postgresql.conf"\n\
 user=postgres\n\
 autorestart=true\n\
+stdout_logfile=/dev/stdout\n\
+stdout_logfile_maxbytes=0\n\
+stderr_logfile=/dev/stderr\n\
+stderr_logfile_maxbytes=0\n\
 \n\
 [program:backend]\n\
-command=/bin/bash -c "until nc -z 127.0.0.1 5432; do echo Waiting for DB...; sleep 1; done; node /app/backend/dist/main.js"\n\
+command=/bin/bash -c "echo Waiting for DB on 5432...; until nc -z 127.0.0.1 5432; do echo ...DB not ready yet; sleep 1; done; echo DB Ready! Starting NestJS...; node /app/backend/dist/main.js"\n\
 directory=/app/backend\n\
 env=DB_HOST="127.0.0.1",DB_PORT="5432",DB_USERNAME="kuser",DB_PASSWORD="kpass",DB_DATABASE="dashboard_db",PORT="3000"\n\
 autorestart=true\n\
+stdout_logfile=/dev/stdout\n\
+stdout_logfile_maxbytes=0\n\
+stderr_logfile=/dev/stderr\n\
+stderr_logfile_maxbytes=0\n\
 \n\
 [program:nginx]\n\
 command=nginx -g "daemon off;"\n\
-autorestart=true\n' > /etc/supervisor/conf.d/supervisord.conf
+autorestart=true\n\
+stdout_logfile=/dev/stdout\n\
+stdout_logfile_maxbytes=0\n\
+stderr_logfile=/dev/stderr\n\
+stderr_logfile_maxbytes=0\n' > /etc/supervisor/conf.d/supervisord.conf
 
 # Portu ayarla ve başlat
 EXPOSE 7860

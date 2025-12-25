@@ -26,8 +26,7 @@ RUN npm run build
 # 2. Aşama: Çalıştırma Ortamı
 FROM node:20-slim
 
-# Gerekli paketleri kur
-# Postgres 15 ve netcat kurulumu
+# Gerekli paketleri kur (Postgres 15, nginx, supervisor, netcat)
 RUN apt-get update && \
     apt-get install -y postgresql-15 postgresql-contrib-15 nginx supervisor netcat-openbsd && \
     rm -rf /var/lib/apt/lists/*
@@ -47,10 +46,11 @@ RUN /etc/init.d/postgresql start && \
     createdb -O kuser dashboard_db
 USER root
 
-# Postgres Socket Klasörünü Hazırla (İzin hatasını önlemek için)
+# Postgres Socket Klasörünü Hazırla
 RUN mkdir -p /var/run/postgresql && chown -R postgres:postgres /var/run/postgresql && chmod 2777 /var/run/postgresql
 
-# Nginx Yapılandırması
+# Nginx Yapılandırması (HATALI SATIR DÜZELTİLDİ)
+# proxy_set_header Connection "Upgrade"; satırı tek parça olmalı.
 RUN printf 'server {\n\
     listen 7860;\n\
     location / {\n\
@@ -76,8 +76,7 @@ RUN printf 'server {\n\
     }\n\
 }' > /etc/nginx/sites-available/default
 
-# Supervisord Yapılandırması (LOGLARI GÖRÜNÜR YAPTIK)
-# stdout_logfile=/dev/stdout satırları sayesinde hatayı Logs sekmesinde görebileceksin.
+# Supervisord Yapılandırması
 RUN printf '[supervisord]\n\
 nodaemon=true\n\
 logfile=/dev/null\n\

@@ -13,15 +13,17 @@ import { AuthModule } from './auth/auth.module';
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: '127.0.0.1',
+      host: '127.0.0.1', // localhost yerine kesin IP
       port: 5432,
       username: 'kuser',
       password: 'kpass',
       database: 'dashboard_db',
-      // ÖNEMLİ: Hugging Face üzerinde dosyaların taranabilmesi için kesin yol:
-      entities: [join(__dirname, '**', '*.entity.{ts,js}')],
+      // ÖNEMLİ: dist klasörü içindeki derlenmiş JS dosyalarını hedef alıyoruz
+      entities: [join(__dirname, '..', '**', '*.entity.{js,ts}')],
       synchronize: true, 
-      logging: true, // Hataları loglarda görmek için aktif
+      logging: true, // Hata olursa loglarda SQL hatasını görelim
+      retryAttempts: 10,
+      retryDelay: 3000,
     }),
     ChatsModule,
     AssistantsModule,

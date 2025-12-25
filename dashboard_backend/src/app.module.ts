@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ChatsModule } from './chats/chats.module';
 import { AssistantsModule } from './assistants/assistants.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+// --- YENİ EKLENENLER ---
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 
@@ -12,12 +13,11 @@ import { AuthModule } from './auth/auth.module';
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: '127.0.0.1', // Localhost yerine bunu kullanmak daha güvenli
-      port: 5432,
-      username: 'kuser',
-      password: 'kpass',
-      // DÜZELTME: Dockerfile'daki isimle birebir aynı olmalı:
-      database: 'dashboard_db', 
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT) || 5432,
+      username: process.env.DB_USERNAME || 'postgres',
+      password: process.env.DB_PASSWORD || 'postgres',
+      database: process.env.DB_DATABASE || 'nest_dashboard_db',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,
     }),

@@ -20,5 +20,5 @@ jobs:
           HF_ACCESS_TOKEN: ${{ secrets.HF_ACCESS_TOKEN }} # Adım 2'de eklediğimiz secret
           # AŞAĞIDAKİ BİLGİLERİ KENDİ SPACE BİLGİLERİNİZLE DEĞİŞTİRİN
           HF_USERNAME: furkankarazeybek
-          HF_SPACE_NAME: kremna_company
+          HF_SPACE_NAME: kremna_dashboard
         run: git push --force https://$HF_USERNAME:$HF_ACCESS_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME main

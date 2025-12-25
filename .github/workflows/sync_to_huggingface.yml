@@ -21,4 +21,4 @@ jobs:
           # AŞAĞIDAKİ BİLGİLERİ KENDİ SPACE BİLGİLERİNİZLE DEĞİŞTİRİN
           HF_USERNAME: furkankarazeybek
           HF_SPACE_NAME: kremna_company
-        run: git push https://$HF_USERNAME:$HF_ACCESS_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME main
+        run: git push --force https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME main

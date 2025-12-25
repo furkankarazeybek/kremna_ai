@@ -26,9 +26,8 @@ RUN npm run build
 # 2. Aşama: Çalıştırma Ortamı
 FROM node:20-slim
 
-# PostgreSQL, Nginx, Supervisor VE Netcat kurulumu
-# (netcat-openbsd paketini ekledik)
-RUN apt-get update && apt-get install -y postgresql postgresql-contrib nginx supervisor netcat-openbsd && rm -rf /var/lib/apt/lists/*
+# PostgreSQL ve Nginx kurulumu
+RUN apt-get update && apt-get install -y postgresql postgresql-contrib nginx supervisor && rm -rf /var/lib/apt/lists/*
 
 # Uygulama dosyalarını kopyala
 WORKDIR /app
@@ -68,18 +67,15 @@ RUN echo 'server { \
 }' > /etc/nginx/sites-available/default
 
 # Supervisord ile tüm servisleri yönet
-# (Backend komutuna veritabanını beklemesi için kontrol ekledik)
 RUN echo '[supervisord] \n\
 nodaemon=true \n\
 [program:postgres] \n\
-command=/bin/bash -c "rm -f /var/lib/postgresql/15/main/postmaster.pid && /usr/lib/postgresql/15/bin/postgres -D /var/lib/postgresql/15/main -c config_file=/etc/postgresql/15/main/postgresql.conf" \n\
+command=/usr/lib/postgresql/15/bin/postgres -D /var/lib/postgresql/15/main -c config_file=/etc/postgresql/15/main/postgresql.conf \n\
 user=postgres \n\
-autorestart=true \n\
 [program:backend] \n\
-command=/bin/bash -c "until nc -z localhost 5432; do echo Waiting for DB...; sleep 1; done; node /app/backend/dist/main.js" \n\
+command=node /app/backend/dist/main.js \n\
 directory=/app/backend \n\
 env=DB_HOST="localhost",DB_PORT="5432",DB_USERNAME="kuser",DB_PASSWORD="kpass",DB_DATABASE="dashboard_db",PORT="3000" \n\
-autorestart=true \n\
 [program:nginx] \n\
 command=nginx -g "daemon off;"' > /etc/supervisor/conf.d/supervisord.conf
 
